@@ -24,7 +24,12 @@ export default function EditEntrepreneur() {
         .eq('id', id)
         .single();
 
-      if (data) setFormData(data);
+      if (error) {
+        console.error('Error loading entrepreneur:', error.message);
+        alert('Failed to load entrepreneur.');
+      } else {
+        setFormData(data);
+      }
     };
 
     fetchEntrepreneur();
@@ -40,13 +45,20 @@ export default function EditEntrepreneur() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const { error } = await supabase
+
+    console.log('Submitting:', formData); // helpful debug
+    const { data, error } = await supabase
       .from('entrepreneurs')
       .update(formData)
       .eq('id', id);
 
-    if (!error) navigate('/entrepreneurs');
-    else alert('Update failed');
+    if (error) {
+      console.error('Supabase update error:', error.message);
+      alert(`Update failed: ${error.message}`);
+    } else {
+      console.log('Update successful:', data);
+      navigate('/entrepreneurs');
+    }
   };
 
   return (
@@ -85,13 +97,20 @@ export default function EditEntrepreneur() {
           onChange={handleChange}
           className="w-full p-2 border rounded text-black"
         />
-        <input
+        <select
           name="referred"
-          placeholder="Referred To"
           value={formData.referred}
           onChange={handleChange}
           className="w-full p-2 border rounded text-black"
-        />
+        >
+          <option value="">Referred To</option>
+          <option value="Go Topeka">Go Topeka</option>
+          <option value="KS Department of Commerce">KS Department of Commerce</option>
+          <option value="Network Kansas">Network Kansas</option>
+          <option value="Omni Circle">Omni Circle</option>
+          <option value="Shawnee Startups">Shawnee Startups</option>
+          <option value="Washburn SBDC">Washburn SBDC</option>
+        </select>
         <input
           name="initials"
           placeholder="Initials"
@@ -99,8 +118,6 @@ export default function EditEntrepreneur() {
           onChange={handleChange}
           className="w-full p-2 border rounded text-black"
         />
-
-        {/* Notes field */}
         <textarea
           name="notes"
           placeholder="Notes"
@@ -109,8 +126,6 @@ export default function EditEntrepreneur() {
           className="w-full p-2 border rounded text-black"
           rows="4"
         />
-
-        {/* Partner Confirmed field with visible label */}
         <label className="flex items-center space-x-2 text-gray-800">
           <input
             type="checkbox"
