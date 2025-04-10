@@ -15,7 +15,7 @@ export default function Layout() {
   return (
     <div className="min-h-screen flex">
       <aside className="w-64 bg-gray-900 text-white p-4 space-y-2">
-        <h1 className="text-xl font-bold mb-4">Entrepreneur CRM</h1>
+        <h1 className="text-xl font-bold mb-4">Founder Tracker</h1>
         <nav className="space-y-2">
           <Link to="/" className="block hover:underline">Dashboard</Link>
           <Link to="/entrepreneurs" className="block hover:underline">Entrepreneurs</Link>
