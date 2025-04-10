@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { supabase } from '../supabaseClient';
 import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '../auth';
 import { v4 as uuidv4 } from 'uuid';
 
 export default function Register() {
@@ -9,7 +8,6 @@ export default function Register() {
   const [password, setPassword] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const navigate = useNavigate();
-  const { login } = useAuth();
 
   const handleRegister = async (e) => {
     e.preventDefault();
@@ -49,7 +47,7 @@ export default function Register() {
       const result = await response.json();
       if (response.ok) {
         alert('Registration successful! Please check your email to confirm your registration.');
-        navigate('/login');
+        navigate('/login'); // ✅ Send them to login, don't auto-login
       } else {
         console.error('Email send failed:', result);
         setErrorMsg('Registration succeeded but sending confirmation email failed.');
