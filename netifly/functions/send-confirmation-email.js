@@ -25,11 +25,11 @@ exports.handler = async function (event, context) {
     // Build the confirmation URL.
     const confirmationUrl = `${process.env.FRONTEND_URL}/confirm-email?token=${token}`;
 
-    const messageData = {
-      from: `Your App <noreply@${process.env.MAILGUN_DOMAIN}>`,
-      to: email,
-      subject: 'Confirm Your Registration',
-      text: `Hello,
+ const messageData = {
+  from: 'Your App <noreply@foundertracker.org>',
+  to: email,
+  subject: 'Confirm Your Registration',
+  text: `Hello,
 
 Thank you for registering at Your App!
 Please confirm your registration by clicking the following link:
