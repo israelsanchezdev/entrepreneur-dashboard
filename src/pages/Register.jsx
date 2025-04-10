@@ -49,6 +49,7 @@ export default function Register() {
 
       const result = await response.json();
       if (response.ok) {
+        await supabase.auth.signOut(); // ✅ Prevent auto-login
         alert('Registration successful! Please check your email to confirm your registration.');
         navigate('/login');
       } else {
