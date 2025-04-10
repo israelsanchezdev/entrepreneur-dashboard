@@ -1,25 +1,62 @@
-
 import React, { useState } from 'react';
 import { supabase } from '../supabaseClient';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../auth';
+import { v4 as uuidv4 } from 'uuid';
 
 export default function Register() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login } = useAuth(); // If you use it elsewhere, but here we won't auto-login upon registration.
 
   const handleRegister = async (e) => {
     e.preventDefault();
-    const { data, error } = await supabase.auth.signUp({ email, password });
 
+    // Generate a unique confirmation token using uuid.
+    const token = uuidv4();
+
+    // Register the user using Supabase Auth.
+    const { data, error } = await supabase.auth.signUp({ email, password });
     if (error) {
       setErrorMsg(error.message);
-    } else {
-      login(data.user);
-      navigate('/');
+      return;
+    }
+
+    // Insert a record into your "users" table that includes email confirmation fields.
+    // Ensure your "users" table has columns: email, is_confirmed (boolean), confirmation_token (text)
+    const { data: profileData, error: profileError } = await supabase
+      .from('users')
+      .insert([
+        { 
+          email, 
+          is_confirmed: false, 
+          confirmation_token: token 
+        },
+      ]);
+    if (profileError) {
+      setErrorMsg(profileError.message);
+      return;
+    }
+
+    // Call the Netlify serverless function to send the confirmation email via Mailgun.
+    try {
+      const response = await fetch('/.netlify/functions/send-confirmation-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, token }),
+      });
+      const result = await response.json();
+      if (response.ok) {
+        alert('Registration successful! Please check your email to confirm your registration.');
+        // Optionally, you may choose not to log in the user until they have confirmed their email.
+        navigate('/login');
+      } else {
+        setErrorMsg('Registration succeeded but sending confirmation email failed.');
+      }
+    } catch (err) {
+      setErrorMsg('Registration succeeded, but an error occurred while sending confirmation email.');
     }
   };
 
