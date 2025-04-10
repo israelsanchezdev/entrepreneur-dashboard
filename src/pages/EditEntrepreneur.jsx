@@ -6,7 +6,7 @@ export default function EditEntrepreneur() {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  // Ensure your field names match the DB column names exactly!
+  // State keys must exactly match your Supabase column names.
   const [formData, setFormData] = useState({
     name: '',
     business: '',
@@ -18,6 +18,7 @@ export default function EditEntrepreneur() {
     confirmed: false,
   });
 
+  // Fetch existing entrepreneur record on mount.
   useEffect(() => {
     const fetchEntrepreneur = async () => {
       const { data, error } = await supabase
@@ -30,37 +31,43 @@ export default function EditEntrepreneur() {
         console.error('Error loading entrepreneur:', error.message);
         alert('Failed to load entrepreneur.');
       } else if (data) {
-        setFormData(data);
+        // Format the date if necessary (assuming ISO string needed for HTML date input)
+        const formattedData = {
+          ...data,
+          date: data.date ? data.date.slice(0, 10) : '',
+        };
+        setFormData(formattedData);
       }
     };
 
     fetchEntrepreneur();
   }, [id]);
 
-  // Handle form input changes
+  // Handle form input changes.
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData((prev) => ({
-      ...prev,
+    setFormData((prevData) => ({
+      ...prevData,
       [name]: type === 'checkbox' ? checked : value,
     }));
   };
 
-  // Submit the form: update the record in Supabase
+  // Update entrepreneur record in Supabase on form submit.
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('Submitting form data:', formData); // Debugging info
 
-    const { data, error } = await supabase
+    console.log('Submitting update:', formData); // Debug log
+
+    const { error } = await supabase
       .from('entrepreneurs')
       .update(formData)
       .eq('id', id);
 
     if (error) {
-      console.error('Supabase update error:', error.message);
+      console.error('Update error:', error.message);
       alert(`Update failed: ${error.message}`);
     } else {
-      console.log('Update successful:', data);
+      alert('Record updated successfully!');
       navigate('/entrepreneurs');
     }
   };
@@ -69,6 +76,7 @@ export default function EditEntrepreneur() {
     <div className="p-6 max-w-2xl mx-auto">
       <h2 className="text-2xl font-bold mb-4">Edit Entrepreneur</h2>
       <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Name */}
         <input
           name="name"
           placeholder="Name"
@@ -76,13 +84,17 @@ export default function EditEntrepreneur() {
           onChange={handleChange}
           className="w-full p-2 border rounded text-black"
         />
+
+        {/* Business Name */}
         <input
           name="business"
-          placeholder="Business"
+          placeholder="Business Name"
           value={formData.business}
           onChange={handleChange}
           className="w-full p-2 border rounded text-black"
         />
+
+        {/* Business Type */}
         <select
           name="type"
           value={formData.type}
@@ -94,6 +106,8 @@ export default function EditEntrepreneur() {
           <option value="Startup">Startup</option>
           <option value="Established">Established</option>
         </select>
+
+        {/* Date */}
         <input
           type="date"
           name="date"
@@ -101,6 +115,8 @@ export default function EditEntrepreneur() {
           onChange={handleChange}
           className="w-full p-2 border rounded text-black"
         />
+
+        {/* Referred To */}
         <select
           name="referred"
           value={formData.referred}
@@ -115,6 +131,8 @@ export default function EditEntrepreneur() {
           <option value="Shawnee Startups">Shawnee Startups</option>
           <option value="Washburn SBDC">Washburn SBDC</option>
         </select>
+
+        {/* Initials */}
         <input
           name="initials"
           placeholder="Initials"
@@ -123,7 +141,7 @@ export default function EditEntrepreneur() {
           className="w-full p-2 border rounded text-black"
         />
 
-        {/* Added notes field */}
+        {/* Notes Field (was missing before) */}
         <textarea
           name="notes"
           placeholder="Notes"
@@ -133,13 +151,14 @@ export default function EditEntrepreneur() {
           rows="4"
         />
 
-        {/* Updated Partner Confirmed label styling */}
+        {/* Partner Confirmed Checkbox with readable label */}
         <label className="flex items-center space-x-2 text-gray-800">
           <input
             type="checkbox"
             name="confirmed"
             checked={formData.confirmed}
             onChange={handleChange}
+            className="form-checkbox h-5 w-5"
           />
           <span>Partner Confirmed</span>
         </label>
