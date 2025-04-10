@@ -33,7 +33,7 @@ const Dashboard = () => {
     const fetchEntrepreneurs = async () => {
       const { data, error } = await supabase
         .from('entrepreneurs')
-        .select('*'); // ✅ Keep all fields
+        .select('*');
       if (!error) setEntrepreneurs(data);
     };
 
@@ -55,6 +55,14 @@ const Dashboard = () => {
   const recentEntrepreneurs = [...entrepreneurs]
     .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
     .slice(0, 7);
+
+  const partnerReferrals = entrepreneurs.reduce((acc, e) => {
+    if (e.referred_to) {
+      acc[e.referred_to] = (acc[e.referred_to] || 0) + 1;
+    }
+    return acc;
+  }, {});
+  const totalPartnerReferrals = Object.values(partnerReferrals).reduce((sum, count) => sum + count, 0);
 
   const barData = {
     labels: ['Monthly Trends'],
@@ -104,7 +112,7 @@ const Dashboard = () => {
         </div>
         <div className="bg-gray-800 p-4 rounded shadow">
           <h2 className="text-sm font-semibold">Partner Referrals</h2>
-          <p className="text-2xl">{totalEntrepreneurs}</p>
+          <p className="text-2xl">{totalPartnerReferrals}</p>
           <p className="text-xs text-gray-400">This month</p>
         </div>
       </div>
@@ -124,7 +132,7 @@ const Dashboard = () => {
             {recentEntrepreneurs.map((e, i) => (
               <tr key={i} className="border-t border-gray-700">
                 <td className="p-2">
-                  {e.created_at
+                  {e.created_at && !isNaN(new Date(e.created_at))
                     ? new Date(e.created_at).toLocaleDateString()
                     : 'No date'}
                 </td>
