@@ -6,7 +6,7 @@ export default function EditEntrepreneur() {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  // State keys must exactly match your Supabase column names.
+  // The keys here must exactly match your Supabase table columns:
   const [formData, setFormData] = useState({
     name: '',
     business: '',
@@ -18,7 +18,7 @@ export default function EditEntrepreneur() {
     confirmed: false,
   });
 
-  // Fetch existing entrepreneur record on mount.
+  // Fetch the existing record on mount.
   useEffect(() => {
     const fetchEntrepreneur = async () => {
       const { data, error } = await supabase
@@ -31,7 +31,7 @@ export default function EditEntrepreneur() {
         console.error('Error loading entrepreneur:', error.message);
         alert('Failed to load entrepreneur.');
       } else if (data) {
-        // Format the date if necessary (assuming ISO string needed for HTML date input)
+        // Format the date for the input if necessary.
         const formattedData = {
           ...data,
           date: data.date ? data.date.slice(0, 10) : '',
@@ -43,7 +43,7 @@ export default function EditEntrepreneur() {
     fetchEntrepreneur();
   }, [id]);
 
-  // Handle form input changes.
+  // Handle user input changes.
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData((prevData) => ({
@@ -52,21 +52,27 @@ export default function EditEntrepreneur() {
     }));
   };
 
-  // Update entrepreneur record in Supabase on form submit.
+  // Update the record in Supabase.
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    console.log('Submitting update:', formData); // Debug log
+    console.log('Submitting update:', formData);
 
-    const { error } = await supabase
+    // Adding .select() here forces Supabase to return the updated rows.
+    const { data, error } = await supabase
       .from('entrepreneurs')
       .update(formData)
-      .eq('id', id);
+      .eq('id', id)
+      .select();
 
     if (error) {
       console.error('Update error:', error.message);
       alert(`Update failed: ${error.message}`);
+    } else if (!data || data.length === 0) {
+      console.error('No rows updated.');
+      alert('Update did not affect any records.');
     } else {
+      console.log('Update successful:', data);
       alert('Record updated successfully!');
       navigate('/entrepreneurs');
     }
@@ -141,7 +147,7 @@ export default function EditEntrepreneur() {
           className="w-full p-2 border rounded text-black"
         />
 
-        {/* Notes Field (was missing before) */}
+        {/* Notes Field */}
         <textarea
           name="notes"
           placeholder="Notes"
@@ -151,7 +157,7 @@ export default function EditEntrepreneur() {
           rows="4"
         />
 
-        {/* Partner Confirmed Checkbox with readable label */}
+        {/* Partner Confirmed Checkbox */}
         <label className="flex items-center space-x-2 text-gray-800">
           <input
             type="checkbox"
