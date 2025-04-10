@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
@@ -13,6 +12,7 @@ export default function EditEntrepreneur() {
     date: '',
     referred: '',
     initials: '',
+    notes: '',
     confirmed: false,
   });
 
@@ -99,7 +99,19 @@ export default function EditEntrepreneur() {
           onChange={handleChange}
           className="w-full p-2 border rounded text-black"
         />
-        <label className="flex items-center space-x-2 text-white">
+
+        {/* Notes field */}
+        <textarea
+          name="notes"
+          placeholder="Notes"
+          value={formData.notes}
+          onChange={handleChange}
+          className="w-full p-2 border rounded text-black"
+          rows="4"
+        />
+
+        {/* Partner Confirmed field with visible label */}
+        <label className="flex items-center space-x-2 text-gray-800">
           <input
             type="checkbox"
             name="confirmed"
@@ -108,13 +120,12 @@ export default function EditEntrepreneur() {
           />
           <span>Partner Confirmed</span>
         </label>
-        
 
-<button
+        <button
           type="submit"
-          className="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600"
+          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
         >
-          Save Changes
+          Save
         </button>
       </form>
     </div>
