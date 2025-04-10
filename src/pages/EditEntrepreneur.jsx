@@ -5,6 +5,8 @@ import { supabase } from '../supabaseClient';
 export default function EditEntrepreneur() {
   const { id } = useParams();
   const navigate = useNavigate();
+
+  // Ensure your field names match the DB column names exactly!
   const [formData, setFormData] = useState({
     name: '',
     business: '',
@@ -27,7 +29,7 @@ export default function EditEntrepreneur() {
       if (error) {
         console.error('Error loading entrepreneur:', error.message);
         alert('Failed to load entrepreneur.');
-      } else {
+      } else if (data) {
         setFormData(data);
       }
     };
@@ -35,6 +37,7 @@ export default function EditEntrepreneur() {
     fetchEntrepreneur();
   }, [id]);
 
+  // Handle form input changes
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData((prev) => ({
@@ -43,10 +46,11 @@ export default function EditEntrepreneur() {
     }));
   };
 
+  // Submit the form: update the record in Supabase
   const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log('Submitting form data:', formData); // Debugging info
 
-    console.log('Submitting:', formData); // helpful debug
     const { data, error } = await supabase
       .from('entrepreneurs')
       .update(formData)
@@ -118,6 +122,8 @@ export default function EditEntrepreneur() {
           onChange={handleChange}
           className="w-full p-2 border rounded text-black"
         />
+
+        {/* Added notes field */}
         <textarea
           name="notes"
           placeholder="Notes"
@@ -126,6 +132,8 @@ export default function EditEntrepreneur() {
           className="w-full p-2 border rounded text-black"
           rows="4"
         />
+
+        {/* Updated Partner Confirmed label styling */}
         <label className="flex items-center space-x-2 text-gray-800">
           <input
             type="checkbox"
