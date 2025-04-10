@@ -9,53 +9,53 @@ export default function Register() {
   const [password, setPassword] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const navigate = useNavigate();
-  const { login } = useAuth(); // If you use it elsewhere, but here we won't auto-login upon registration.
+  const { login } = useAuth();
 
   const handleRegister = async (e) => {
     e.preventDefault();
+    const token = uuidv4(); // Generate confirmation token
 
-    // Generate a unique confirmation token using uuid.
-    const token = uuidv4();
-
-    // Register the user using Supabase Auth.
+    // Step 1: Sign up the user using Supabase Auth
     const { data, error } = await supabase.auth.signUp({ email, password });
     if (error) {
       setErrorMsg(error.message);
       return;
     }
 
-    // Insert a record into your "users" table that includes email confirmation fields.
-    // Ensure your "users" table has columns: email, is_confirmed (boolean), confirmation_token (text)
-    const { data: profileData, error: profileError } = await supabase
+    // Step 2: Add user to 'users' table with confirmation token
+    const { error: profileError } = await supabase
       .from('users')
       .insert([
-        { 
-          email, 
-          is_confirmed: false, 
-          confirmation_token: token 
+        {
+          email,
+          is_confirmed: false,
+          confirmation_token: token,
         },
       ]);
+
     if (profileError) {
       setErrorMsg(profileError.message);
       return;
     }
 
-    // Call the Netlify serverless function to send the confirmation email via Mailgun.
+    // Step 3: Call Netlify function to send confirmation email
     try {
       const response = await fetch('/.netlify/functions/send-confirmation-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, token }),
       });
+
       const result = await response.json();
       if (response.ok) {
         alert('Registration successful! Please check your email to confirm your registration.');
-        // Optionally, you may choose not to log in the user until they have confirmed their email.
         navigate('/login');
       } else {
+        console.error('Email send failed:', result);
         setErrorMsg('Registration succeeded but sending confirmation email failed.');
       }
     } catch (err) {
+      console.error('Fetch error:', err);
       setErrorMsg('Registration succeeded, but an error occurred while sending confirmation email.');
     }
   };
@@ -66,7 +66,7 @@ export default function Register() {
         {/* Left Section */}
         <div className="bg-white p-10 space-y-6">
           <h1 className="text-2xl font-bold text-gray-900">
-            Resource Partners – Entrepreneur Journey
+            Founder Tracker
           </h1>
           <p className="text-gray-700">
             A collaborative platform for resource partners to track entrepreneurs through their business journey.
@@ -87,6 +87,7 @@ export default function Register() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className="w-full border border-gray-300 p-2 rounded"
+            required
           />
           <input
             type="password"
@@ -94,6 +95,7 @@ export default function Register() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className="w-full border border-gray-300 p-2 rounded"
+            required
           />
           {errorMsg && <p className="text-red-500 text-sm">{errorMsg}</p>}
           <button
