@@ -1,35 +1,29 @@
+
 import React from 'react';
-import { Link, Outlet, useLocation } from 'react-router-dom';
-import { useAuth } from '../auth';
+import { Link } from 'react-router-dom';
 
-export default function Layout() {
-  const { logout } = useAuth();
-  const location = useLocation();
-
-  const isAuthPage = ['/login', '/register'].includes(location.pathname);
-
-  if (isAuthPage) {
-    return <Outlet />;
-  }
-
+const Layout = ({ children }) => {
   return (
-    <div className="min-h-screen flex">
-      <aside className="w-64 bg-gray-900 text-white p-4 space-y-2">
-        <h1 className="text-xl font-bold mb-4">Entrepreneur CRM</h1>
-        <nav className="space-y-2">
-          <Link to="/" className="block hover:underline">Dashboard</Link>
-          <Link to="/entrepreneurs" className="block hover:underline">Entrepreneurs</Link>
-          <Link to="/add" className="block hover:underline">Add Entrepreneur</Link>
-          <Link to="/reports" className="block hover:underline">Reports</Link>
-          <Link to="/settings" className="block hover:underline">Settings</Link>
+    <div className="min-h-screen flex flex-col">
+      <header className="bg-blue-600 text-white p-4">
+        <nav>
+          <ul className="flex space-x-4">
+            <li><Link to="/dashboard">Dashboard</Link></li>
+            <li><Link to="/entrepreneurs">Entrepreneurs</Link></li>
+            <li><Link to="/add-entrepreneur">Add Entrepreneur</Link></li>
+          </ul>
         </nav>
-        <button onClick={logout} className="mt-6 bg-red-600 text-white px-4 py-2 rounded">
-          Logout
-        </button>
-      </aside>
-      <main className="flex-1 bg-gray-100 dark:bg-gray-900 text-black dark:text-white">
-        <Outlet />
+      </header>
+
+      <main className="flex-grow">
+        {children}
       </main>
+
+      <footer className="sticky-footer">
+        <p>Powered by <a href="https://gentleai.tech" target="_blank">Gentle AI</a> &copy; 2025</p>
+      </footer>
     </div>
   );
-}
+};
+
+export default Layout;
