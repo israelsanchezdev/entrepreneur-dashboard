@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../supabaseClient';
 import { Bar, Pie } from 'react-chartjs-2';
@@ -46,123 +45,99 @@ const Dashboard = () => {
     return acc;
   }, {});
 
-  const businessTypeStats = Object.entries(businessTypes).map(([type, count]) => {
-    const percent = ((count / totalEntrepreneurs) * 100).toFixed(0);
-    return `${percent}% ${type}`;
-  });
+  const businessTypeStats = Object.entries(businessTypes).map(([type, count]) => ({
+    type,
+    percentage: ((count / totalEntrepreneurs) * 100).toFixed(0),
+  }));
 
-  const recentWeek = entrepreneurs.filter((e) => {
-    const date = new Date(e.date);
-    const oneWeekAgo = new Date();
-    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-    return date >= oneWeekAgo;
-  });
-
-  const monthlyReferrals = entrepreneurs.filter((e) => {
-    const date = new Date(e.date);
-    const now = new Date();
-    return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
-  });
-
-  const activityLog = entrepreneurs
-    .map((e) => ({
-      date: new Date(e.date).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }),
-      name: e.name,
-      partner: e.referred || 'N/A',
-      action: 'Added'
-    }))
-    .sort((a, b) => new Date(b.date) - new Date(a.date));
-
-  const monthlyCounts = entrepreneurs.reduce((acc, e) => {
-    const date = new Date(e.date);
-    const key = `${date.getFullYear()}-${date.getMonth() + 1}`;
-    acc[key] = (acc[key] || 0) + 1;
-    return acc;
-  }, {});
-
-  const monthlyLabels = Object.keys(monthlyCounts);
-  const monthlyValues = Object.values(monthlyCounts);
+  const recentEntrepreneurs = [...entrepreneurs]
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+    .slice(0, 7);
 
   const barData = {
-    labels: monthlyLabels,
+    labels: ['Monthly Trends'],
     datasets: [
       {
         label: 'Monthly Trends',
-        data: monthlyValues,
-        backgroundColor: 'rgba(59,130,246,0.6)'
-      }
-    ]
+        data: [totalEntrepreneurs],
+        backgroundColor: 'rgba(54, 162, 235, 0.6)',
+      },
+    ],
   };
 
   const pieData = {
     labels: Object.keys(businessTypes),
     datasets: [
       {
-        label: 'Business Type Distribution',
+        label: 'Business Types',
         data: Object.values(businessTypes),
-        backgroundColor: ['#60a5fa', '#93c5fd', '#bfdbfe']
-      }
-    ]
+        backgroundColor: [
+          'rgba(54, 162, 235, 0.6)',
+          'rgba(75, 192, 192, 0.6)',
+          'rgba(153, 102, 255, 0.6)',
+        ],
+      },
+    ],
   };
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-gray-900 p-4 rounded shadow">
-          <h3 className="text-white text-sm">Total Entrepreneurs</h3>
-          <p className="text-2xl font-bold text-white">{totalEntrepreneurs}</p>
+    <div className="p-6 text-white">
+      <h1 className="text-3xl font-bold mb-6">Dashboard</h1>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div className="bg-gray-800 p-4 rounded shadow">
+          <h2 className="text-sm font-semibold">Total Entrepreneurs</h2>
+          <p className="text-2xl">{totalEntrepreneurs}</p>
         </div>
-        <div className="bg-gray-900 p-4 rounded shadow">
-          <h3 className="text-white text-sm">Business Types</h3>
-          <p className="text-sm text-white">{businessTypeStats.join(' · ')}</p>
+        <div className="bg-gray-800 p-4 rounded shadow">
+          <h2 className="text-sm font-semibold">Business Types</h2>
+          <p className="text-sm">
+            {businessTypeStats.map((b, i) => `${b.percentage}% ${b.type}`).join(' • ')}
+          </p>
         </div>
-        <div className="bg-gray-900 p-4 rounded shadow">
-          <h3 className="text-white text-sm">Recent Contacts</h3>
-          <p className="text-2xl font-bold text-white">{recentWeek.length}</p>
+        <div className="bg-gray-800 p-4 rounded shadow">
+          <h2 className="text-sm font-semibold">Recent Contacts</h2>
+          <p className="text-2xl">{recentEntrepreneurs.length}</p>
           <p className="text-xs text-gray-400">Last 7 days</p>
         </div>
-        <div className="bg-gray-900 p-4 rounded shadow">
-          <h3 className="text-white text-sm">Partner Referrals</h3>
-          <p className="text-2xl font-bold text-white">{monthlyReferrals.length}</p>
+        <div className="bg-gray-800 p-4 rounded shadow">
+          <h2 className="text-sm font-semibold">Partner Referrals</h2>
+          <p className="text-2xl">{totalEntrepreneurs}</p>
           <p className="text-xs text-gray-400">This month</p>
         </div>
       </div>
 
-      <div>
-        <h3 className="text-black text-lg font-semibold mb-2">Recent Activity</h3>
-        <div className="overflow-auto rounded border border-gray-700">
-          <table className="min-w-full bg-gray-800 text-white">
-            <thead>
-              <tr>
-                <th className="p-2 text-left">Date</th>
-                <th className="p-2 text-left">Entrepreneur</th>
-                <th className="p-2 text-left">Action</th>
-                <th className="p-2 text-left">Partner</th>
+      <h2 className="text-lg font-semibold mb-2">Recent Activity</h2>
+      <div className="overflow-x-auto mb-6">
+        <table className="w-full text-left text-sm bg-gray-900 rounded">
+          <thead>
+            <tr className="bg-gray-800">
+              <th className="p-2">Date</th>
+              <th className="p-2">Entrepreneur</th>
+              <th className="p-2">Action</th>
+              <th className="p-2">Partner</th>
+            </tr>
+          </thead>
+          <tbody>
+            {recentEntrepreneurs.map((e, i) => (
+              <tr key={i} className="border-t border-gray-700">
+                <td className="p-2">{new Date(e.created_at).toDateString()}</td>
+                <td className="p-2 font-semibold">{e.name}</td>
+                <td className="p-2"><span className="bg-blue-500 text-white px-2 py-1 rounded text-xs">Added</span></td>
+                <td className="p-2">{e.referred_to}</td>
               </tr>
-            </thead>
-            <tbody>
-              {activityLog.map((log, idx) => (
-                <tr key={idx} className="border-t border-gray-700">
-                  <td className="p-2">{log.date}</td>
-                  <td className="p-2 font-semibold">{log.name}</td>
-                  <td className="p-2">
-                    <span className="bg-blue-500 px-2 py-1 rounded text-sm">Added</span>
-                  </td>
-                  <td className="p-2">{log.partner}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+            ))}
+          </tbody>
+        </table>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
-          <h3 className="text-black text-lg font-semibold mb-2">Monthly Trends</h3>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="bg-gray-900 p-4 rounded">
+          <h2 className="text-lg font-semibold mb-2">Monthly Trends</h2>
           <Bar data={barData} />
         </div>
-        <div>
-          <h3 className="text-black text-lg font-semibold mb-2">Business Type Distribution</h3>
+        <div className="bg-gray-900 p-4 rounded">
+          <h2 className="text-lg font-semibold mb-2">Business Type Distribution</h2>
           <Pie data={pieData} />
         </div>
       </div>
