@@ -33,7 +33,7 @@ const Dashboard = () => {
     const fetchEntrepreneurs = async () => {
       const { data, error } = await supabase
         .from('entrepreneurs')
-        .select('id, name, type, referred_to, created_at'); // ✅ Add specific fields
+        .select('*'); // ✅ Keep all fields
       if (!error) setEntrepreneurs(data);
     };
 
@@ -128,7 +128,7 @@ const Dashboard = () => {
                     ? new Date(e.created_at).toLocaleDateString()
                     : 'No date'}
                 </td>
-                <td className="p-2 font-semibold">{e.name}</td>
+                <td className="p-2 font-semibold">{e.name || '—'}</td>
                 <td className="p-2">
                   <span className="bg-blue-500 text-white px-2 py-1 rounded text-xs">
                     Added
