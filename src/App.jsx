@@ -1,53 +1,42 @@
-
-import React, { useEffect } from 'react';
-import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
-import Layout from './components/Layout';
+import React from 'react';
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import Login from './pages/Login';
+import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Entrepreneurs from './pages/Entrepreneurs';
 import AddEntrepreneur from './pages/AddEntrepreneur';
-import EditEntrepreneur from './pages/EditEntrepreneur';
-import Reports from './pages/Reports';
-import Settings from './pages/Settings';
-import Login from './pages/Login';
-import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
-import ResetPassword from './pages/ResetPassword';
 import RequireAuth from './components/RequireAuth';
+import { AuthProvider } from './auth';
 
-export default function App() {
-  const location = useLocation();
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    const hashParams = new URLSearchParams(location.hash.slice(1));
-    const type = hashParams.get('type');
-    if (type === 'recovery') {
-      navigate('/reset-password');
-    }
-  }, [location, navigate]);
-
+function App() {
   return (
-    <Routes>
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
-      <Route path="/forgot-password" element={<ForgotPassword />} />
-      <Route path="/reset-password" element={<ResetPassword />} />
-      <Route
-        path="/"
-        element={
-          <RequireAuth>
-            <Layout />
-          </RequireAuth>
-        }
-      >
-        <Route index element={<Dashboard />} />
-        <Route path="entrepreneurs" element={<Entrepreneurs />} />
-        <Route path="add" element={<AddEntrepreneur />} />
-        <Route path="edit/:id" element={<EditEntrepreneur />} />
-        <Route path="reports" element={<Reports />} />
-        <Route path="settings" element={<Settings />} />
-      </Route>
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+    <AuthProvider>
+      <Router>
+        <div className="flex flex-col min-h-screen">
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            
+            {/* Protected Routes */}
+            <Route element={<RequireAuth />}>
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/entrepreneurs" element={<Entrepreneurs />} />
+              <Route path="/add-entrepreneur" element={<AddEntrepreneur />} />
+            </Route>
+          </Routes>
+
+          {/* Sticky Footer */}
+          <footer className="sticky-footer">
+            <p>
+              Powered by <a href="https://gentleai.tech" target="_blank" rel="noopener noreferrer">Gentle AI</a> | Copyright 2025
+            </p>
+          </footer>
+        </div>
+      </Router>
+    </AuthProvider>
   );
 }
+
+export default App;
