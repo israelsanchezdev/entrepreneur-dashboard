@@ -1,54 +1,55 @@
 // netlify/functions/send-confirmation-email.js
+const nodemailer = require('nodemailer');
 
-const formData = require('form-data');
-const Mailgun = require('mailgun.js');
-const mailgun = new Mailgun(formData);
-
-const mg = mailgun.client({
-  username: 'api',
-  key: process.env.MAILGUN_API_KEY,
-});
-
-exports.handler = async function (event, context) {
-  // Allow only POST requests.
+exports.handler = async function (event) {
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: 'Method Not Allowed' };
   }
 
   try {
-    // Parse the JSON body.
     const { email, token } = JSON.parse(event.body);
     if (!email || !token) {
       return { statusCode: 400, body: 'Missing email or token' };
     }
 
-    // Build the confirmation URL.
     const confirmationUrl = `${process.env.FRONTEND_URL}/confirm-email?token=${token}`;
 
- const messageData = {
-  from: 'Your App <noreply@foundertracker.org>',
-  to: email,
-  subject: 'Confirm Your Registration',
-  text: `Hello,
+    const transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: Number(process.env.SMTP_PORT),
+      secure: false, // set to true if using port 465
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
+      },
+    });
 
-Thank you for registering at Your App!
-Please confirm your registration by clicking the following link:
+    const mailOptions = {
+      from: `"Founder Tracker" <${process.env.SMTP_USER}>`,
+      to: email,
+      subject: 'Please confirm your registration',
+      text: `Hi there,
+
+Thanks for registering at Founder Tracker!
+
+Please confirm your registration by clicking this link:
 ${confirmationUrl}
 
-If you did not sign up, please ignore this email.`,
+If you didn’t sign up, you can ignore this email.`,
     };
 
-    const response = await mg.messages.create(process.env.MAILGUN_DOMAIN, messageData);
-    console.log('Mailgun response:', response);
+    const info = await transporter.sendMail(mailOptions);
+    console.log('Email sent:', info.response);
+
     return {
       statusCode: 200,
-      body: JSON.stringify({ message: 'Confirmation email sent' }),
+      body: JSON.stringify({ message: 'Confirmation email sent via SMTP' }),
     };
   } catch (error) {
-    console.error('Error sending email:', error);
+    console.error('SMTP email error:', error);
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: error.message }),
+      body: JSON.stringify({ error: 'Failed to send confirmation email via SMTP' }),
     };
   }
 };
