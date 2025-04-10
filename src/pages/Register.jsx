@@ -20,11 +20,14 @@ export default function Register() {
       return;
     }
 
-    // Step 2: Add user to 'users' table with confirmation token
+    const user = data.user;
+
+    // Step 2: Add user to 'users' table with RLS-compliant ID
     const { error: profileError } = await supabase
       .from('users')
       .insert([
         {
+          id: user.id,            // ✅ Matches auth.uid()
           email,
           is_confirmed: false,
           confirmation_token: token,
@@ -47,7 +50,7 @@ export default function Register() {
       const result = await response.json();
       if (response.ok) {
         alert('Registration successful! Please check your email to confirm your registration.');
-        navigate('/login'); // ✅ Send them to login, don't auto-login
+        navigate('/login');
       } else {
         console.error('Email send failed:', result);
         setErrorMsg('Registration succeeded but sending confirmation email failed.');
