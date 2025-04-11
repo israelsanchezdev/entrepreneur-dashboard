@@ -42,14 +42,21 @@ const Dashboard = () => {
 
   const totalEntrepreneurs = entrepreneurs.length;
 
-  const businessTypes = entrepreneurs.reduce((acc, e) => {
-    acc[e.type] = (acc[e.type] || 0) + 1;
-    return acc;
-  }, {});
+  const businessTypes = {
+    Startup: 0,
+    Established: 0,
+    Ideation: 0,
+  };
+
+  entrepreneurs.forEach((e) => {
+    if (e.type && businessTypes.hasOwnProperty(e.type)) {
+      businessTypes[e.type]++;
+    }
+  });
 
   const businessTypeStats = Object.entries(businessTypes).map(([type, count]) => ({
     type,
-    percentage: ((count / totalEntrepreneurs) * 100).toFixed(0),
+    percentage: totalEntrepreneurs > 0 ? ((count / totalEntrepreneurs) * 100).toFixed(0) : 0,
   }));
 
   const recentEntrepreneurs = [...entrepreneurs]
@@ -57,8 +64,8 @@ const Dashboard = () => {
     .slice(0, 7);
 
   const partnerReferrals = entrepreneurs.reduce((acc, e) => {
-    if (e.referred_to) {
-      acc[e.referred_to] = (acc[e.referred_to] || 0) + 1;
+    if (e.referred) {
+      acc[e.referred] = (acc[e.referred] || 0) + 1;
     }
     return acc;
   }, {});
@@ -142,7 +149,7 @@ const Dashboard = () => {
                     Added
                   </span>
                 </td>
-                <td className="p-2">{e.referred_to || '—'}</td>
+                <td className="p-2">{e.referred || '—'}</td>
               </tr>
             ))}
           </tbody>
