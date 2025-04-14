@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import Layout from './components/Layout';
@@ -7,7 +6,6 @@ import Entrepreneurs from './pages/Entrepreneurs';
 import AddEntrepreneur from './pages/AddEntrepreneur';
 import EditEntrepreneur from './pages/EditEntrepreneur';
 import Reports from './pages/Reports';
-import Settings from './pages/Settings';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
@@ -45,7 +43,6 @@ export default function App() {
         <Route path="add" element={<AddEntrepreneur />} />
         <Route path="edit/:id" element={<EditEntrepreneur />} />
         <Route path="reports" element={<Reports />} />
-        <Route path="settings" element={<Settings />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
