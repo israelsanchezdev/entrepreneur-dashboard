@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../auth';
-import { LayoutDashboard, Users, PlusSquare, BarChart2, Settings } from 'lucide-react';
+import { LayoutDashboard, Users, PlusSquare, BarChart2 } from 'lucide-react';
 
 export default function Layout() {
   const { logout } = useAuth();
@@ -29,9 +29,6 @@ export default function Layout() {
           </Link>
           <Link to="/reports" className="flex items-center gap-2 p-2 rounded hover:bg-gray-800">
             <BarChart2 size={18} /> Reports
-          </Link>
-          <Link to="/settings" className="flex items-center gap-2 p-2 rounded hover:bg-gray-800">
-            <Settings size={18} /> Settings
           </Link>
         </nav>
         <button
