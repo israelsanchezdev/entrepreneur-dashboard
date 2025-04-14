@@ -42,6 +42,23 @@ const Entrepreneurs = () => {
       try {
         console.log('Attempting to delete entrepreneur with ID:', id);
         
+        // Get the current session
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError) {
+          console.error('Session error:', sessionError);
+          alert('Please log in to delete entrepreneurs');
+          return;
+        }
+
+        if (!session) {
+          console.error('No active session found');
+          alert('Please log in to delete entrepreneurs');
+          return;
+        }
+
+        console.log('User session found, proceeding with delete...');
+        
         const { error } = await supabase
           .from('entrepreneurs')
           .delete()
