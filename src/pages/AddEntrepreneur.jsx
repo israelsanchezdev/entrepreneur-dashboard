@@ -19,7 +19,7 @@ const AddEntrepreneur = () => {
   });
 
   const resourcePartners = [
-    { name: 'Go Topeka', email: 'israelsanchezooficial@gmail.com' },
+    { name: 'Go Topeka', email: 'israelsanchezofficial@gmail.com' },
     { name: 'KS Department of Commerce', email: 'info@kansascommerce.gov' },
     { name: 'Network Kansas', email: 'info@networkkansas.com' },
     { name: 'Omni Circle', email: 'info@omnicircle.com' },
