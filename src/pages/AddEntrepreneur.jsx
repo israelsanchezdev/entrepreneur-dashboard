@@ -18,8 +18,7 @@ const AddEntrepreneur = () => {
     notes: ''
   });
 
-  const resourcePartners = [
-    { name: 'Go Topeka', email: 'israelsanchezofficial@gmail.com' },
+  const resourcePartners = [    { name: 'Go Topeka', email: 'israelsanchezofficial@gmail.com' },
     { name: 'KS Department of Commerce', email: 'info@kansascommerce.gov' },
     { name: 'Network Kansas', email: 'info@networkkansas.com' },
     { name: 'Omni Circle', email: 'info@omnicircle.com' },
@@ -57,21 +56,35 @@ const AddEntrepreneur = () => {
       // Send notification email to the referred partner
       if (formData.referred) {
         const partner = resourcePartners.find(p => p.name === formData.referred);
+        console.log('Found partner:', partner);
         if (partner) {
-          const response = await fetch('/.netlify/functions/send-partner-notification', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              entrepreneurName: formData.name,
-              businessName: formData.business,
-              partnerEmail: partner.email,
-              partnerName: partner.name,
-              notes: formData.notes
-            })
-          });
+          console.log('Attempting to send email to:', partner.email);
+          try {
+            const response = await fetch('/.netlify/functions/send-partner-notification', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                entrepreneurName: formData.name,
+                businessName: formData.business,
+                partnerEmail: partner.email,
+                partnerName: partner.name,
+                notes: formData.notes
+              })
+            });
 
-          if (!response.ok) {
-            console.error('Failed to send notification email');
+            const result = await response.json();
+            console.log('Email response:', result);
+
+            if (!response.ok) {
+              console.error('Failed to send notification email:', result);
+              alert('Failed to send notification email. Please check the console for details.');
+            } else {
+              console.log('Email sent successfully:', result);
+              alert('Email notification sent successfully!');
+            }
+          } catch (error) {
+            console.error('Error sending email:', error);
+            alert('An error occurred while sending the email notification. Please check the console for details.');
           }
         }
       }
