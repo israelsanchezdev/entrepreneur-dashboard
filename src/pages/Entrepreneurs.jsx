@@ -40,27 +40,34 @@ const Entrepreneurs = () => {
   const handleDelete = async (id) => {
     if (confirm('Are you sure you want to delete this entrepreneur?')) {
       try {
+        console.log('Attempting to delete entrepreneur with ID:', id);
+        
         const { error } = await supabase
           .from('entrepreneurs')
           .delete()
-          .eq('id', id);
+          .eq('id', id)
+          .select();
 
         if (error) {
-          console.error('Delete error:', error.message);
-          alert('Failed to delete entrepreneur');
+          console.error('Delete error:', error);
+          alert(`Failed to delete entrepreneur: ${error.message}`);
+          return;
+        }
+
+        console.log('Successfully deleted entrepreneur. Refreshing list...');
+        
+        // Refresh the entrepreneurs list
+        const { data, error: fetchError } = await supabase
+          .from('entrepreneurs')
+          .select('*');
+        
+        if (fetchError) {
+          console.error('Error fetching updated list:', fetchError);
+          alert('Entrepreneur deleted but failed to refresh the list');
         } else {
-          // Refresh the entrepreneurs list
-          const { data, error: fetchError } = await supabase
-            .from('entrepreneurs')
-            .select('*');
-          
-          if (fetchError) {
-            console.error('Error fetching updated list:', fetchError.message);
-            alert('Entrepreneur deleted but failed to refresh the list');
-          } else {
-            setEntrepreneurs(data);
-            alert('Entrepreneur deleted successfully');
-          }
+          console.log('Successfully refreshed entrepreneurs list');
+          setEntrepreneurs(data);
+          alert('Entrepreneur deleted successfully');
         }
       } catch (err) {
         console.error('Error in delete operation:', err);
@@ -116,7 +123,6 @@ const Entrepreneurs = () => {
           onChange={(e) => setSearch(e.target.value)}
           className="px-4 py-2 rounded w-full md:w-1/3 text-black"
         />
-        {/* Search button removed since filtering occurs live */}
       </div>
 
       {/* Entrepreneurs table */}
