@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
@@ -20,12 +19,12 @@ const AddEntrepreneur = () => {
   });
 
   const resourcePartners = [
-    'Go Topeka',
-    'KS Department of Commerce',
-    'Network Kansas',
-    'Omni Circle',
-    'Shawnee Startups',
-    'Washburn SBDC'
+    { name: 'Go Topeka', email: 'israelsanchezooficial@gmail.com' },
+    { name: 'KS Department of Commerce', email: 'info@kansascommerce.gov' },
+    { name: 'Network Kansas', email: 'info@networkkansas.com' },
+    { name: 'Omni Circle', email: 'info@omnicircle.com' },
+    { name: 'Shawnee Startups', email: 'info@shawneestartups.com' },
+    { name: 'Washburn SBDC', email: 'info@washburnsbdc.com' }
   ];
 
   const businessTypes = ['Ideation', 'Startup', 'Established'];
@@ -41,17 +40,46 @@ const AddEntrepreneur = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const { error } = await supabase.from('entrepreneurs').insert([
-      {
-        ...formData,
-        user_id: user.id
-      }
-    ]);
+    try {
+      // Insert entrepreneur into database
+      const { error } = await supabase.from('entrepreneurs').insert([
+        {
+          ...formData,
+          user_id: user.id
+        }
+      ]);
 
-    if (error) {
-      alert('Failed to save entrepreneur');
-    } else {
+      if (error) {
+        alert('Failed to save entrepreneur');
+        return;
+      }
+
+      // Send notification email to the referred partner
+      if (formData.referred) {
+        const partner = resourcePartners.find(p => p.name === formData.referred);
+        if (partner) {
+          const response = await fetch('/.netlify/functions/send-partner-notification', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              entrepreneurName: formData.name,
+              businessName: formData.business,
+              partnerEmail: partner.email,
+              partnerName: partner.name,
+              notes: formData.notes
+            })
+          });
+
+          if (!response.ok) {
+            console.error('Failed to send notification email');
+          }
+        }
+      }
+
       navigate('/entrepreneurs');
+    } catch (error) {
+      console.error('Error:', error);
+      alert('An error occurred while saving the entrepreneur');
     }
   };
 
@@ -106,7 +134,7 @@ const AddEntrepreneur = () => {
         >
           <option value="">Referred To</option>
           {resourcePartners.map((partner) => (
-            <option key={partner} value={partner}>{partner}</option>
+            <option key={partner.name} value={partner.name}>{partner.name}</option>
           ))}
         </select>
         <input
