@@ -39,11 +39,32 @@ const Entrepreneurs = () => {
   // Delete an entrepreneur record
   const handleDelete = async (id) => {
     if (confirm('Are you sure you want to delete this entrepreneur?')) {
-      const { error } = await supabase.from('entrepreneurs').delete().eq('id', id);
-      if (error) {
-        console.error('Delete error:', error.message);
-      } else {
-        setEntrepreneurs(entrepreneurs.filter((e) => e.id !== id));
+      try {
+        const { error } = await supabase
+          .from('entrepreneurs')
+          .delete()
+          .eq('id', id);
+
+        if (error) {
+          console.error('Delete error:', error.message);
+          alert('Failed to delete entrepreneur');
+        } else {
+          // Refresh the entrepreneurs list
+          const { data, error: fetchError } = await supabase
+            .from('entrepreneurs')
+            .select('*');
+          
+          if (fetchError) {
+            console.error('Error fetching updated list:', fetchError.message);
+            alert('Entrepreneur deleted but failed to refresh the list');
+          } else {
+            setEntrepreneurs(data);
+            alert('Entrepreneur deleted successfully');
+          }
+        }
+      } catch (err) {
+        console.error('Error in delete operation:', err);
+        alert('An error occurred while deleting the entrepreneur');
       }
     }
   };
