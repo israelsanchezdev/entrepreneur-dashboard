@@ -1,12 +1,10 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
-import { useAuth } from '../auth';
+import { useNavigate } from 'react-router-dom';
 
-const AddEntrepreneur = () => {
-  const navigate = useNavigate();
-  const { user } = useAuth();
+const STAGES = ['Ideation', 'Planning', 'Launch', 'Funding'];
 
+export default function AddEntrepreneur() {
   const [formData, setFormData] = useState({
     name: '',
     business: '',
@@ -14,85 +12,55 @@ const AddEntrepreneur = () => {
     date: '',
     referred: '',
     initials: '',
+    notes: '',
     confirmed: false,
-    notes: ''
+    stage: '',
   });
 
-  const resourcePartners = [    { name: 'Go Topeka', email: 'israelsanchezofficial@gmail.com' },
-    { name: 'KS Department of Commerce', email: 'info@kansascommerce.gov' },
-    { name: 'Network Kansas', email: 'info@networkkansas.com' },
-    { name: 'Omni Circle', email: 'info@omnicircle.com' },
-    { name: 'Shawnee Startups', email: 'info@shawneestartups.com' },
-    { name: 'Washburn SBDC', email: 'info@washburnsbdc.com' }
-  ];
-
-  const businessTypes = ['Ideation', 'Startup', 'Established'];
+  const [errorMsg, setErrorMsg] = useState('');
+  const navigate = useNavigate();
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value
+      [name]: type === 'checkbox' ? checked : value,
+    }));
+  };
+
+  const handleStageSelect = (stage) => {
+    setFormData((prev) => ({
+      ...prev,
+      stage,
     }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    try {
-      // Insert entrepreneur into database
-      const { error } = await supabase.from('entrepreneurs').insert([
-        {
-          ...formData,
-          user_id: user.id
-        }
-      ]);
+    const user = supabase.auth.getUser();
+    const {
+      data: { user: currentUser },
+    } = await user;
 
-      if (error) {
-        alert('Failed to save entrepreneur');
-        return;
-      }
+    if (!currentUser) {
+      setErrorMsg('User not authenticated');
+      return;
+    }
 
-      // Send notification email to the referred partner
-      if (formData.referred) {
-        const partner = resourcePartners.find(p => p.name === formData.referred);
-        console.log('Found partner:', partner);
-        if (partner) {
-          console.log('Attempting to send email to:', partner.email);
-          try {
-            const response = await fetch('/.netlify/functions/send-partner-notification', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                entrepreneurName: formData.name,
-                businessName: formData.business,
-                partnerEmail: partner.email,
-                partnerName: partner.name,
-                notes: formData.notes
-              })
-            });
+    const { data, error } = await supabase.from('entrepreneurs').insert([
+      {
+        ...formData,
+        user_id: currentUser.id,
+      },
+    ]);
 
-            const result = await response.json();
-            console.log('Email response:', result);
-
-            if (!response.ok) {
-              console.error('Failed to send notification email:', result);
-              alert('Failed to send notification email. Please check the console for details.');
-            } else {
-              console.log('Email sent successfully:', result);
-              alert('Email notification sent successfully!');
-            }
-          } catch (error) {
-            console.error('Error sending email:', error);
-            alert('An error occurred while sending the email notification. Please check the console for details.');
-          }
-        }
-      }
-
+    if (error) {
+      console.error('Insert error:', error.message);
+      setErrorMsg('Failed to add entrepreneur.');
+    } else {
+      alert('Entrepreneur added successfully!');
       navigate('/entrepreneurs');
-    } catch (error) {
-      console.error('Error:', error);
-      alert('An error occurred while saving the entrepreneur');
     }
   };
 
@@ -101,87 +69,106 @@ const AddEntrepreneur = () => {
       <h2 className="text-2xl font-bold mb-4">Add Entrepreneur</h2>
       <form onSubmit={handleSubmit} className="space-y-4">
         <input
-          type="text"
           name="name"
-          placeholder="Entrepreneur Name"
+          placeholder="Name"
           value={formData.name}
           onChange={handleChange}
-          required
-          className="w-full p-2 rounded text-black"
+          className="w-full p-2 border rounded text-black"
         />
         <input
-          type="text"
           name="business"
           placeholder="Business Name"
           value={formData.business}
           onChange={handleChange}
-          required
-          className="w-full p-2 rounded text-black"
+          className="w-full p-2 border rounded text-black"
         />
         <select
           name="type"
           value={formData.type}
           onChange={handleChange}
-          required
-          className="w-full p-2 rounded text-black"
+          className="w-full p-2 border rounded text-black"
         >
           <option value="">Select Business Type</option>
-          {businessTypes.map((type) => (
-            <option key={type} value={type}>{type}</option>
-          ))}
+          <option value="Ideation">Ideation</option>
+          <option value="Startup">Startup</option>
+          <option value="Established">Established</option>
         </select>
         <input
           type="date"
           name="date"
           value={formData.date}
           onChange={handleChange}
-          required
-          className="w-full p-2 rounded text-black"
+          className="w-full p-2 border rounded text-black"
         />
         <select
           name="referred"
           value={formData.referred}
           onChange={handleChange}
-          required
-          className="w-full p-2 rounded text-black"
+          className="w-full p-2 border rounded text-black"
         >
           <option value="">Referred To</option>
-          {resourcePartners.map((partner) => (
-            <option key={partner.name} value={partner.name}>{partner.name}</option>
-          ))}
+          <option value="Go Topeka">Go Topeka</option>
+          <option value="KS Department of Commerce">KS Department of Commerce</option>
+          <option value="Network Kansas">Network Kansas</option>
+          <option value="Omni Circle">Omni Circle</option>
+          <option value="Shawnee Startups">Shawnee Startups</option>
+          <option value="Washburn SBDC">Washburn SBDC</option>
         </select>
         <input
-          type="text"
           name="initials"
           placeholder="Initials"
           value={formData.initials}
           onChange={handleChange}
-          required
-          className="w-full p-2 rounded text-black"
+          className="w-full p-2 border rounded text-black"
         />
-        <label className="flex items-center space-x-2">
-          <input
-            type="checkbox"
-            name="confirmed"
-            checked={formData.confirmed}
-            onChange={handleChange}
-          />
-          <span>Partner Confirmed</span>
-        </label>
         <textarea
           name="notes"
           placeholder="Notes"
           value={formData.notes}
           onChange={handleChange}
-          rows={4}
-          className="w-full p-2 rounded text-black"
+          className="w-full p-2 border rounded text-black"
+          rows="4"
         />
-        <button type="submit" className="bg-blue-500 px-4 py-2 rounded hover:bg-blue-600">
-          Save Entrepreneur
+        <label className="flex items-center space-x-2 text-black">
+          <input
+            type="checkbox"
+            name="confirmed"
+            checked={formData.confirmed}
+            onChange={handleChange}
+            className="form-checkbox h-5 w-5 text-blue-500"
+          />
+          <span>Partner Confirmed</span>
+        </label>
+
+        {/* Stage Buttons */}
+        <div className="space-y-1">
+          <label className="block font-semibold text-black">Stage</label>
+          <div className="flex gap-2 flex-wrap">
+            {STAGES.map((stage) => (
+              <button
+                type="button"
+                key={stage}
+                onClick={() => handleStageSelect(stage)}
+                className={`px-3 py-1 rounded text-sm font-medium transition ${
+                  formData.stage === stage
+                    ? 'bg-green-600 text-white'
+                    : 'bg-gray-600 text-gray-300'
+                }`}
+              >
+                {stage}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {errorMsg && <p className="text-red-500">{errorMsg}</p>}
+        <button
+          type="submit"
+          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+        >
+          Save
         </button>
       </form>
     </div>
   );
-};
-
-export default AddEntrepreneur;
+}
