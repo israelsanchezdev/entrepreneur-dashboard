@@ -6,7 +6,6 @@ export default function EditEntrepreneur() {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  // The keys here must exactly match your Supabase table columns:
   const [formData, setFormData] = useState({
     name: '',
     business: '',
@@ -16,9 +15,11 @@ export default function EditEntrepreneur() {
     initials: '',
     notes: '',
     confirmed: false,
+    stage: '',
   });
 
-  // Fetch the existing record on mount.
+  const stages = ['Ideation', 'Planning', 'Launch', 'Funding'];
+
   useEffect(() => {
     const fetchEntrepreneur = async () => {
       const { data, error } = await supabase
@@ -31,34 +32,32 @@ export default function EditEntrepreneur() {
         console.error('Error loading entrepreneur:', error.message);
         alert('Failed to load entrepreneur.');
       } else if (data) {
-        // Format the date for the input if necessary.
-        const formattedData = {
+        const formatted = {
           ...data,
           date: data.date ? data.date.slice(0, 10) : '',
         };
-        setFormData(formattedData);
+        setFormData(formatted);
       }
     };
 
     fetchEntrepreneur();
   }, [id]);
 
-  // Handle user input changes.
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData((prevData) => ({
-      ...prevData,
+    setFormData((prev) => ({
+      ...prev,
       [name]: type === 'checkbox' ? checked : value,
     }));
   };
 
-  // Update the record in Supabase.
+  const handleStageSelect = (stage) => {
+    setFormData((prev) => ({ ...prev, stage }));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    console.log('Submitting update:', formData);
-
-    // Adding .select() here forces Supabase to return the updated rows.
     const { data, error } = await supabase
       .from('entrepreneurs')
       .update(formData)
@@ -72,7 +71,6 @@ export default function EditEntrepreneur() {
       console.error('No rows updated.');
       alert('Update did not affect any records.');
     } else {
-      console.log('Update successful:', data);
       alert('Record updated successfully!');
       navigate('/entrepreneurs');
     }
@@ -82,7 +80,7 @@ export default function EditEntrepreneur() {
     <div className="p-6 max-w-2xl mx-auto">
       <h2 className="text-2xl font-bold mb-4">Edit Entrepreneur</h2>
       <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Name */}
+
         <input
           name="name"
           placeholder="Name"
@@ -91,7 +89,6 @@ export default function EditEntrepreneur() {
           className="w-full p-2 border rounded text-black"
         />
 
-        {/* Business Name */}
         <input
           name="business"
           placeholder="Business Name"
@@ -100,7 +97,6 @@ export default function EditEntrepreneur() {
           className="w-full p-2 border rounded text-black"
         />
 
-        {/* Business Type */}
         <select
           name="type"
           value={formData.type}
@@ -113,7 +109,6 @@ export default function EditEntrepreneur() {
           <option value="Established">Established</option>
         </select>
 
-        {/* Date */}
         <input
           type="date"
           name="date"
@@ -122,7 +117,6 @@ export default function EditEntrepreneur() {
           className="w-full p-2 border rounded text-black"
         />
 
-        {/* Referred To */}
         <select
           name="referred"
           value={formData.referred}
@@ -138,7 +132,6 @@ export default function EditEntrepreneur() {
           <option value="Washburn SBDC">Washburn SBDC</option>
         </select>
 
-        {/* Initials */}
         <input
           name="initials"
           placeholder="Initials"
@@ -147,7 +140,6 @@ export default function EditEntrepreneur() {
           className="w-full p-2 border rounded text-black"
         />
 
-        {/* Notes Field */}
         <textarea
           name="notes"
           placeholder="Notes"
@@ -158,16 +150,36 @@ export default function EditEntrepreneur() {
         />
 
         {/* Partner Confirmed Checkbox */}
-        <label className="flex items-center space-x-2 text-gray-800">
+        <label className="flex items-center space-x-2 text-white">
           <input
             type="checkbox"
             name="confirmed"
             checked={formData.confirmed}
             onChange={handleChange}
-            className="form-checkbox h-5 w-5"
+            className="form-checkbox h-5 w-5 text-blue-600"
           />
           <span>Partner Confirmed</span>
         </label>
+
+        {/* Stage Progress Buttons */}
+        <div className="space-y-2">
+          <h3 className="font-semibold text-white">Business Stage</h3>
+          <div className="flex flex-wrap gap-2">
+            {stages.map((stage) => (
+              <button
+                key={stage}
+                type="button"
+                className={`px-3 py-1 rounded-full text-sm font-medium border 
+                  ${formData.stage === stage
+                    ? 'bg-green-600 text-white'
+                    : 'bg-gray-600 text-gray-200 hover:bg-gray-500'}`}
+                onClick={() => handleStageSelect(stage)}
+              >
+                {stage}
+              </button>
+            ))}
+          </div>
+        </div>
 
         <button
           type="submit"
