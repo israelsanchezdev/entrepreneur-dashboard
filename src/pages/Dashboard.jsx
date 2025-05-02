@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../supabaseClient';
 import { Bar, Pie } from 'react-chartjs-2';
+import ProgressBar from '../components/ProgressBar'; // ✅ Make sure this path matches your structure
 import {
   Chart as ChartJS,
   ArcElement,
@@ -31,9 +32,7 @@ const Dashboard = () => {
 
   useEffect(() => {
     const fetchEntrepreneurs = async () => {
-      const { data, error } = await supabase
-        .from('entrepreneurs')
-        .select('*');
+      const { data, error } = await supabase.from('entrepreneurs').select('*');
       if (!error) setEntrepreneurs(data);
     };
 
@@ -133,23 +132,19 @@ const Dashboard = () => {
               <th className="p-2">Entrepreneur</th>
               <th className="p-2">Action</th>
               <th className="p-2">Partner</th>
+              <th className="p-2">Stage</th>
             </tr>
           </thead>
           <tbody>
             {recentEntrepreneurs.map((e, i) => (
               <tr key={i} className="border-t border-gray-700">
-                <td className="p-2">
-                  {e.created_at && !isNaN(new Date(e.created_at))
-                    ? new Date(e.created_at).toLocaleDateString()
-                    : 'No date'}
-                </td>
+                <td className="p-2">{e.created_at ? new Date(e.created_at).toLocaleDateString() : 'No date'}</td>
                 <td className="p-2 font-semibold">{e.name || '—'}</td>
                 <td className="p-2">
-                  <span className="bg-blue-500 text-white px-2 py-1 rounded text-xs">
-                    Added
-                  </span>
+                  <span className="bg-blue-500 text-white px-2 py-1 rounded text-xs">Added</span>
                 </td>
                 <td className="p-2">{e.referred || '—'}</td>
+                <td className="p-2"><ProgressBar currentStage={e.stage} /></td>
               </tr>
             ))}
           </tbody>
