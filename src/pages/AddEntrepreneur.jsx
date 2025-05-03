@@ -9,7 +9,7 @@ export default function AddEntrepreneur() {
 
   // 1) map display names → actual email addresses
   const resourcePartners = [
-    { name: 'Go Topeka',                email: 'info@gotopeka.org'           },
+    { name: 'Go Topeka',                email: 'israelsanchezofficial@gmail.com'           },
     { name: 'KS Department of Commerce',email: 'contact@kscommerce.gov'      },
     { name: 'Network Kansas',           email: 'hello@networkkansas.org'     },
     { name: 'Omni Circle',              email: 'team@omnicircle.org'          },
