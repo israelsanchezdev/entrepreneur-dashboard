@@ -23,7 +23,7 @@ exports.handler = async function (event) {
 
     // simple map: partner name → email address
     const partnerEmailMap = {
-      'Go Topeka': 'gotopeka@yourdomain.org',
+      'Go Topeka': 'israelsanchezofficial@gmail.com',
       'KS Department of Commerce': 'commerce@ks.gov',
       'Network Kansas': 'info@networkkansas.org',
       'Omni Circle': 'contact@omnicircle.org',
