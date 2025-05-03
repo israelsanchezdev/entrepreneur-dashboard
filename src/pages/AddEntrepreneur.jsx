@@ -1,10 +1,11 @@
 // src/pages/AddEntrepreneur.jsx
 import React, { useState } from 'react';
-import { supabase } from '../supabaseClient';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '../supabaseClient';
+import { useAuth } from '../auth';
 
-// 1) Your partner name → email mapping
-const resourcePartners = [
+// Partner name → actual email address map
+const RESOURCE_PARTNERS = [
   { name: 'Go Topeka',                 email: 'israelsanchezofficial@gmail.com'          },
   { name: 'KS Department of Commerce', email: 'contact@kscommerce.gov'    },
   { name: 'Network Kansas',            email: 'hello@networkkansas.org'    },
@@ -15,7 +16,7 @@ const resourcePartners = [
 
 export default function AddEntrepreneur() {
   const navigate = useNavigate();
-  const user = supabase.auth.user(); // v1 syntax; if you're on v2 use supabase.auth.getUser()
+  const { user } = useAuth(); // get the logged-in user
 
   const [formData, setFormData] = useState({
     name: '',
@@ -31,74 +32,79 @@ export default function AddEntrepreneur() {
   });
   const [errorMsg, setErrorMsg] = useState('');
 
-  const handleChange = e => {
+  const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value,
     }));
   };
 
-  const handleSubmit = async e => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setErrorMsg('');
 
-    // 2) Must be signed in
     if (!user) {
       setErrorMsg('You must be logged in to add an entrepreneur.');
       return;
     }
 
-    // 3) Lookup partnerEmail by referred name
-    const partnerObj = resourcePartners.find(p => p.name === formData.referred);
+    // Find the partner email
+    const partnerObj = RESOURCE_PARTNERS.find((p) => p.name === formData.referred);
     const partnerEmail = partnerObj?.email || '';
 
-    // 4) Insert into entrepreneurs
+    // Insert into Supabase
     const { error: insertError } = await supabase
       .from('entrepreneurs')
-      .insert([
-        {
-          name:      formData.name,
-          business:  formData.business,
-          type:      formData.type,
-          date:      formData.date,
-          referred:  formData.referred,
-          initials:  formData.initials,
-          confirmed: formData.confirmed,
-          notes:     formData.notes,
-          stage:     formData.stage,
-          user_id:   user.id,
-        },
-      ]);
+      .insert([{
+        name:       formData.name,
+        business:   formData.business,
+        type:       formData.type,
+        date:       formData.date || null,
+        referred:   formData.referred,
+        initials:   formData.initials,
+        confirmed:  formData.confirmed,
+        notes:      formData.notes,
+        stage:      formData.stage,
+        user_id:    user.id,
+      }]);
 
     if (insertError) {
+      console.error('Insert error:', insertError);
       setErrorMsg(insertError.message);
       return;
     }
 
-    // 5) Notify the partner
-    await fetch('/.netlify/functions/send-partner-notification', {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        to:           partnerEmail,
-        name:         formData.referred,
-        entrepreneur: formData.name,
-        business:     formData.business,
-        date:         formData.date,
-        initials:     formData.initials,
-        notes:        formData.notes,
-        stage:        formData.stage,
-      }),
-    });
+    // Notify partner
+    try {
+      const res = await fetch('/.netlify/functions/send-partner-notification', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to:           partnerEmail,
+          name:         formData.referred,
+          entrepreneur: formData.name,
+          business:     formData.business,
+          date:         formData.date,
+          initials:     formData.initials,
+          notes:        formData.notes,
+          stage:        formData.stage,
+        }),
+      });
+      if (!res.ok) {
+        console.error('Partner notification failed:', await res.text());
+      }
+    } catch (err) {
+      console.error('Partner notification error:', err);
+    }
 
-    alert('Entrepreneur added — partner notified!');
+    // Done
     navigate('/entrepreneurs');
   };
 
   return (
-    <div className="p-6 max-w-xl mx-auto bg-white rounded shadow space-y-4">
-      <h2 className="text-2xl font-bold">Add New Entrepreneur</h2>
+    <div className="p-6 max-w-xl mx-auto bg-white dark:bg-gray-800 rounded shadow space-y-4">
+      <h2 className="text-2xl font-bold text-black dark:text-white">Add New Entrepreneur</h2>
       {errorMsg && <p className="text-red-600">{errorMsg}</p>}
 
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -146,14 +152,14 @@ export default function AddEntrepreneur() {
           className="w-full p-2 border rounded text-black"
         />
 
-        {/* Partner */}
+        {/* Referred To */}
         <select
           name="referred"
           value={formData.referred}
-          onChange={e => {
+          onChange={(e) => {
             const name = e.target.value;
-            const partner = resourcePartners.find(p => p.name === name);
-            setFormData(prev => ({
+            const partner = RESOURCE_PARTNERS.find((p) => p.name === name);
+            setFormData((prev) => ({
               ...prev,
               referred:     name,
               partnerEmail: partner?.email || '',
@@ -163,7 +169,7 @@ export default function AddEntrepreneur() {
           className="w-full p-2 border rounded text-black"
         >
           <option value="">Referred To</option>
-          {resourcePartners.map(p => (
+          {RESOURCE_PARTNERS.map((p) => (
             <option key={p.name} value={p.name}>{p.name}</option>
           ))}
         </select>
@@ -177,8 +183,8 @@ export default function AddEntrepreneur() {
           className="w-full p-2 border rounded text-black"
         />
 
-        {/* Confirmed */}
-        <label className="inline-flex items-center space-x-2">
+        {/* Partner Confirmed */}
+        <label className="inline-flex items-center space-x-2 text-black dark:text-white">
           <input
             type="checkbox"
             name="confirmed"
@@ -186,7 +192,7 @@ export default function AddEntrepreneur() {
             onChange={handleChange}
             className="form-checkbox"
           />
-          <span className="text-black">Partner Confirmed</span>
+          <span>Partner Confirmed</span>
         </label>
 
         {/* Notes */}
@@ -201,7 +207,7 @@ export default function AddEntrepreneur() {
 
         {/* Stage */}
         <div>
-          <label className="block mb-1 font-semibold text-black">Stage</label>
+          <label className="block mb-1 font-semibold text-black dark:text-white">Stage</label>
           <select
             name="stage"
             value={formData.stage}
@@ -218,7 +224,7 @@ export default function AddEntrepreneur() {
 
         <button
           type="submit"
-          className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded"
         >
           Add Entrepreneur
         </button>
