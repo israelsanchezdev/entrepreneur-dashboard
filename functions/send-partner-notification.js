@@ -4,33 +4,26 @@ const nodemailer = require('nodemailer');
 
 exports.handler = async function (event) {
   if (event.httpMethod !== 'POST') {
-    return {
-      statusCode: 405,
-      body: JSON.stringify({ error: 'Method Not Allowed' }),
-    };
+    return { statusCode: 405, body: 'Method Not Allowed' };
   }
 
   try {
     const {
-      to,            // actual email address
-      name,          // partner display name
-      entrepreneur,
-      business,
-      date,
-      initials,
-      notes,
-      stage,
+      to, name,
+      entrepreneur, business,
+      date, initials, notes, stage,
     } = JSON.parse(event.body);
 
-    // → If frontend failed to send us `to`, bail out
+    console.log('Partner notify called with:', { to, name, entrepreneur, business, date, initials, notes, stage });
+
     if (!to) {
+      console.error('No "to" address provided');
       return {
         statusCode: 400,
         body: JSON.stringify({ error: 'Missing partner email (to)' }),
       };
     }
 
-    // Create SMTP transporter
     const transporter = nodemailer.createTransport({
       host:   process.env.SMTP_HOST,
       port:   Number(process.env.SMTP_PORT),
@@ -41,10 +34,9 @@ exports.handler = async function (event) {
       },
     });
 
-    // Send the email
-    await transporter.sendMail({
+    const mailOptions = {
       from:    process.env.FROM_EMAIL,
-      to,      
+      to,
       subject: `New referral for ${name}`,
       text: `
 Hello ${name},
@@ -63,14 +55,19 @@ Please follow up at your earliest convenience.
 Thank you,
 Founder Tracker
       `,
-    });
+    };
+
+    console.log('Sending mail with options:', mailOptions);
+
+    const info = await transporter.sendMail(mailOptions);
+    console.log('SMTP response:', info);
 
     return {
       statusCode: 200,
-      body: JSON.stringify({ message: 'Partner notified' }),
+      body: JSON.stringify({ message: 'Partner notified', info }),
     };
   } catch (err) {
-    console.error('Error sending partner notification:', err);
+    console.error('Error in partner notification:', err);
     return {
       statusCode: 500,
       body: JSON.stringify({ error: 'Failed to notify partner', details: err.message }),
