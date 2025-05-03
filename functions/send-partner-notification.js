@@ -12,7 +12,8 @@ exports.handler = async function (event) {
 
   try {
     const {
-      partner,
+      to,            // actual email address
+      name,          // partner display name
       entrepreneur,
       business,
       date,
@@ -21,29 +22,18 @@ exports.handler = async function (event) {
       stage,
     } = JSON.parse(event.body);
 
-    // simple map: partner name → email address
-    const partnerEmailMap = {
-      'Go Topeka': 'israelsanchezofficial@gmail.com',
-      'KS Department of Commerce': 'commerce@ks.gov',
-      'Network Kansas': 'info@networkkansas.org',
-      'Omni Circle': 'contact@omnicircle.org',
-      'Shawnee Startups': 'hello@shawneestartups.org',
-      'Washburn SBDC': 'sbdc@washburn.edu',
-      // …add your real partner emails here…
-    };
-
-    const toEmail = partnerEmailMap[partner];
-    if (!toEmail) {
+    // → If frontend failed to send us `to`, bail out
+    if (!to) {
       return {
         statusCode: 400,
-        body: JSON.stringify({ error: `Unknown partner: ${partner}` }),
+        body: JSON.stringify({ error: 'Missing partner email (to)' }),
       };
     }
 
-    // create SMTP transporter
+    // Create SMTP transporter
     const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: parseInt(process.env.SMTP_PORT, 10),
+      host:   process.env.SMTP_HOST,
+      port:   Number(process.env.SMTP_PORT),
       secure: false,
       auth: {
         user: process.env.SMTP_USER,
@@ -51,15 +41,15 @@ exports.handler = async function (event) {
       },
     });
 
-    // send mail
+    // Send the email
     await transporter.sendMail({
-      from: process.env.FROM_EMAIL,
-      to: toEmail,
-      subject: `New Entrepreneur Referral: ${entrepreneur}`,
+      from:    process.env.FROM_EMAIL,
+      to,      
+      subject: `New referral for ${name}`,
       text: `
-Hello ${partner},
+Hello ${name},
 
-A new entrepreneur has been referred to you.
+A new entrepreneur has been referred to you:
 
 • Name:        ${entrepreneur}
 • Business:    ${business}
@@ -68,22 +58,22 @@ A new entrepreneur has been referred to you.
 • Stage:       ${stage}
 • Notes:       ${notes || '–'}
 
-Please follow up with them at your earliest convenience.
+Please follow up at your earliest convenience.
 
 Thank you,
-The Founder Tracker Team
+Founder Tracker
       `,
     });
 
     return {
       statusCode: 200,
-      body: JSON.stringify({ message: 'Partner notified by email' }),
+      body: JSON.stringify({ message: 'Partner notified' }),
     };
   } catch (err) {
     console.error('Error sending partner notification:', err);
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: 'Failed to send partner notification', details: err.message }),
+      body: JSON.stringify({ error: 'Failed to notify partner', details: err.message }),
     };
   }
 };
