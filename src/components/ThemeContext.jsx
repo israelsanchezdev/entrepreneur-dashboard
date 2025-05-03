@@ -1,4 +1,4 @@
-// src/components/ThemeContext.jsx
+// src/components/ThemeContext.js
 import React, { createContext, useState, useEffect, useContext } from 'react';
 
 const ThemeContext = createContext();
@@ -6,15 +6,14 @@ const ThemeContext = createContext();
 export const ThemeProvider = ({ children }) => {
   const [theme, setTheme] = useState('light');
 
-  // Whenever `theme` changes, add/remove the `dark` class on <html>
   useEffect(() => {
-    const root = document.documentElement;
-    if (theme === 'dark') root.classList.add('dark');
-    else root.classList.remove('dark');
+    // remove both then add the current
+    document.documentElement.classList.remove('light', 'dark');
+    document.documentElement.classList.add(theme);
   }, [theme]);
 
   const toggleTheme = () => {
-    setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
+    setTheme(prev => (prev === 'light' ? 'dark' : 'light'));
   };
 
   return (
@@ -24,5 +23,4 @@ export const ThemeProvider = ({ children }) => {
   );
 };
 
-// Custom hook for easy access
 export const useTheme = () => useContext(ThemeContext);
