@@ -2,20 +2,20 @@
 import React, { useState } from 'react';
 import { supabase } from '../supabaseClient';
 import { useNavigate } from 'react-router-dom';
-import { v4 as uuidv4 } from 'uuid';
+
+// 1) Your partner name → email mapping
+const resourcePartners = [
+  { name: 'Go Topeka',                 email: 'israelsanchezofficial@gmail.com'          },
+  { name: 'KS Department of Commerce', email: 'contact@kscommerce.gov'    },
+  { name: 'Network Kansas',            email: 'hello@networkkansas.org'    },
+  { name: 'Omni Circle',               email: 'team@omnicircle.org'         },
+  { name: 'Shawnee Startups',          email: 'support@shawneestartups.com' },
+  { name: 'Washburn SBDC',             email: 'sbdc@washburn.edu'           },
+];
 
 export default function AddEntrepreneur() {
   const navigate = useNavigate();
-
-  // 1) map display names → actual email addresses
-  const resourcePartners = [
-    { name: 'Go Topeka',                email: 'israelsanchezofficial@gmail.com'           },
-    { name: 'KS Department of Commerce',email: 'contact@kscommerce.gov'      },
-    { name: 'Network Kansas',           email: 'hello@networkkansas.org'     },
-    { name: 'Omni Circle',              email: 'team@omnicircle.org'          },
-    { name: 'Shawnee Startups',         email: 'support@shawneestartups.com'  },
-    { name: 'Washburn SBDC',            email: 'sbdc@washburn.edu'            },
-  ];
+  const user = supabase.auth.user(); // v1 syntax; if you're on v2 use supabase.auth.getUser()
 
   const [formData, setFormData] = useState({
     name: '',
@@ -23,7 +23,7 @@ export default function AddEntrepreneur() {
     type: '',
     date: '',
     referred: '',
-    partnerEmail: '',    // ← added
+    partnerEmail: '',
     initials: '',
     confirmed: false,
     notes: '',
@@ -35,76 +35,64 @@ export default function AddEntrepreneur() {
     const { name, value, type, checked } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value
+      [name]: type === 'checkbox' ? checked : value,
     }));
   };
 
-  const handleRegister = async e => {
+  const handleSubmit = async e => {
     e.preventDefault();
     setErrorMsg('');
 
-    // 2) find partner object by its name
-    const partnerObj = resourcePartners.find(p => p.name === formData.referred);
-    const payload = { ...formData, partnerEmail: partnerObj?.email || '' };
-
-    // 3) signup w/ Supabase Auth
-    const token = uuidv4();
-    const { data: authData, error: authError } = await supabase.auth.signUp({
-      email: formData.email,      // if you collect email field
-      password: formData.password // if you collect password field
-    });
-    if (authError) {
-      setErrorMsg(authError.message);
+    // 2) Must be signed in
+    if (!user) {
+      setErrorMsg('You must be logged in to add an entrepreneur.');
       return;
     }
 
-    // 4) insert row into entrepreneurs table
+    // 3) Lookup partnerEmail by referred name
+    const partnerObj = resourcePartners.find(p => p.name === formData.referred);
+    const partnerEmail = partnerObj?.email || '';
+
+    // 4) Insert into entrepreneurs
     const { error: insertError } = await supabase
       .from('entrepreneurs')
       .insert([
         {
-          name:       formData.name,
-          business:   formData.business,
-          type:       formData.type,
-          date:       formData.date,
-          referred:   formData.referred,
-          initials:   formData.initials,
-          confirmed:  formData.confirmed,
-          notes:      formData.notes,
-          stage:      formData.stage,
-          user_id:    authData.user.id, // ensure RLS policy allows this
-        }
+          name:      formData.name,
+          business:  formData.business,
+          type:      formData.type,
+          date:      formData.date,
+          referred:  formData.referred,
+          initials:  formData.initials,
+          confirmed: formData.confirmed,
+          notes:     formData.notes,
+          stage:     formData.stage,
+          user_id:   user.id,
+        },
       ]);
+
     if (insertError) {
       setErrorMsg(insertError.message);
       return;
     }
 
-    // 5) send confirmation email to the user
-    await fetch('/.netlify/functions/send-confirmation-email', {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ email: authData.user.email, token })
-    });
-
-    // 6) notify the partner by **actual** email address
+    // 5) Notify the partner
     await fetch('/.netlify/functions/send-partner-notification', {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({
-        to:           payload.partnerEmail,      // ← the real email
-        name:         payload.referred,          // partner display name
-        entrepreneur: payload.name,
-        business:     payload.business,
-        date:         payload.date,
-        initials:     payload.initials,
-        notes:        payload.notes,
-        stage:        payload.stage
-      })
+      body: JSON.stringify({
+        to:           partnerEmail,
+        name:         formData.referred,
+        entrepreneur: formData.name,
+        business:     formData.business,
+        date:         formData.date,
+        initials:     formData.initials,
+        notes:        formData.notes,
+        stage:        formData.stage,
+      }),
     });
 
-    // 7) finish up
-    alert('Entrepreneur added! Confirmation email sent; partner notified.');
+    alert('Entrepreneur added — partner notified!');
     navigate('/entrepreneurs');
   };
 
@@ -113,8 +101,8 @@ export default function AddEntrepreneur() {
       <h2 className="text-2xl font-bold">Add New Entrepreneur</h2>
       {errorMsg && <p className="text-red-600">{errorMsg}</p>}
 
-      <form onSubmit={handleRegister} className="space-y-4">
-        {/* Entrepreneur Name */}
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Name */}
         <input
           name="name"
           placeholder="Entrepreneur Name"
@@ -124,7 +112,7 @@ export default function AddEntrepreneur() {
           className="w-full p-2 border rounded text-black"
         />
 
-        {/* Business Name */}
+        {/* Business */}
         <input
           name="business"
           placeholder="Business Name"
@@ -134,7 +122,7 @@ export default function AddEntrepreneur() {
           className="w-full p-2 border rounded text-black"
         />
 
-        {/* Business Type */}
+        {/* Type */}
         <select
           name="type"
           value={formData.type}
@@ -149,7 +137,7 @@ export default function AddEntrepreneur() {
           <option value="Funding">Funding</option>
         </select>
 
-        {/* Date Contacted */}
+        {/* Date */}
         <input
           type="date"
           name="date"
@@ -158,7 +146,7 @@ export default function AddEntrepreneur() {
           className="w-full p-2 border rounded text-black"
         />
 
-        {/* Referred To (partner) */}
+        {/* Partner */}
         <select
           name="referred"
           value={formData.referred}
@@ -168,7 +156,7 @@ export default function AddEntrepreneur() {
             setFormData(prev => ({
               ...prev,
               referred:     name,
-              partnerEmail: partner?.email || ''
+              partnerEmail: partner?.email || '',
             }));
           }}
           required
@@ -189,7 +177,7 @@ export default function AddEntrepreneur() {
           className="w-full p-2 border rounded text-black"
         />
 
-        {/* Partner Confirmed */}
+        {/* Confirmed */}
         <label className="inline-flex items-center space-x-2">
           <input
             type="checkbox"
@@ -213,7 +201,7 @@ export default function AddEntrepreneur() {
 
         {/* Stage */}
         <div>
-          <label className="block mb-1 text-black font-semibold">Stage</label>
+          <label className="block mb-1 font-semibold text-black">Stage</label>
           <select
             name="stage"
             value={formData.stage}
