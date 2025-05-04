@@ -1,7 +1,8 @@
+// src/pages/Dashboard.jsx
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../supabaseClient';
 import { Bar, Pie } from 'react-chartjs-2';
-import ProgressBar from '../components/ProgressBar'; // ✅ Make sure this path matches your structure
+import ProgressBar from '../components/ProgressBar'; 
 import {
   Chart as ChartJS,
   ArcElement,
@@ -35,52 +36,59 @@ const Dashboard = () => {
       const { data, error } = await supabase.from('entrepreneurs').select('*');
       if (!error) setEntrepreneurs(data);
     };
-
     fetchEntrepreneurs();
   }, []);
 
+  // total ever
   const totalEntrepreneurs = entrepreneurs.length;
 
-  const businessTypes = {
-    Startup: 0,
-    Established: 0,
-    Ideation: 0,
-  };
+  // total this calendar month
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const thisMonthCount = entrepreneurs.filter(e => {
+    const d = new Date(e.created_at);
+    return !isNaN(d) && d >= monthStart;
+  }).length;
 
-  entrepreneurs.forEach((e) => {
+  // business type distribution
+  const businessTypes = { Startup: 0, Established: 0, Ideation: 0 };
+  entrepreneurs.forEach(e => {
     if (e.type && businessTypes.hasOwnProperty(e.type)) {
       businessTypes[e.type]++;
     }
   });
-
   const businessTypeStats = Object.entries(businessTypes).map(([type, count]) => ({
     type,
-    percentage: totalEntrepreneurs > 0 ? ((count / totalEntrepreneurs) * 100).toFixed(0) : 0,
+    percentage: totalEntrepreneurs > 0
+      ? ((count / totalEntrepreneurs) * 100).toFixed(0)
+      : 0,
   }));
 
+  // recent activity (last 7 entries)
   const recentEntrepreneurs = [...entrepreneurs]
     .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
     .slice(0, 7);
 
+  // partner referrals this month (counts all, unchanged)
   const partnerReferrals = entrepreneurs.reduce((acc, e) => {
-    if (e.referred) {
-      acc[e.referred] = (acc[e.referred] || 0) + 1;
-    }
+    if (e.referred) acc[e.referred] = (acc[e.referred] || 0) + 1;
     return acc;
   }, {});
-  const totalPartnerReferrals = Object.values(partnerReferrals).reduce((sum, count) => sum + count, 0);
+  const totalPartnerReferrals = Object.values(partnerReferrals).reduce((sum, c) => sum + c, 0);
 
+  // 🍺 Bar chart: this month only
   const barData = {
     labels: ['Monthly Trends'],
     datasets: [
       {
         label: 'Monthly Trends',
-        data: [totalEntrepreneurs],
+        data: [thisMonthCount],
         backgroundColor: 'rgba(54, 162, 235, 0.6)',
       },
     ],
   };
 
+  // 🍕 Pie chart: business types
   const pieData = {
     labels: Object.keys(businessTypes),
     datasets: [
@@ -108,18 +116,18 @@ const Dashboard = () => {
         <div className="bg-gray-800 p-4 rounded shadow">
           <h2 className="text-sm font-semibold">Business Types</h2>
           <p className="text-sm">
-            {businessTypeStats.map((b, i) => `${b.percentage}% ${b.type}`).join(' • ')}
+            {businessTypeStats.map(b => `${b.percentage}% ${b.type}`).join(' • ')}
           </p>
         </div>
         <div className="bg-gray-800 p-4 rounded shadow">
           <h2 className="text-sm font-semibold">Recent Contacts</h2>
           <p className="text-2xl">{recentEntrepreneurs.length}</p>
-          <p className="text-xs text-gray-400">Last 7 days</p>
+          <p className="text-xs text-gray-400">Last 7 entries</p>
         </div>
         <div className="bg-gray-800 p-4 rounded shadow">
           <h2 className="text-sm font-semibold">Partner Referrals</h2>
           <p className="text-2xl">{totalPartnerReferrals}</p>
-          <p className="text-xs text-gray-400">This month</p>
+          <p className="text-xs text-gray-400">All time</p>
         </div>
       </div>
 
@@ -138,13 +146,21 @@ const Dashboard = () => {
           <tbody>
             {recentEntrepreneurs.map((e, i) => (
               <tr key={i} className="border-t border-gray-700">
-                <td className="p-2">{e.created_at ? new Date(e.created_at).toLocaleDateString() : 'No date'}</td>
+                <td className="p-2">
+                  {e.created_at
+                    ? new Date(e.created_at).toLocaleDateString()
+                    : 'No date'}
+                </td>
                 <td className="p-2 font-semibold">{e.name || '—'}</td>
                 <td className="p-2">
-                  <span className="bg-blue-500 text-white px-2 py-1 rounded text-xs">Added</span>
+                  <span className="bg-blue-500 text-white px-2 py-1 rounded text-xs">
+                    Added
+                  </span>
                 </td>
                 <td className="p-2">{e.referred || '—'}</td>
-                <td className="p-2"><ProgressBar currentStage={e.stage} /></td>
+                <td className="p-2">
+                  <ProgressBar currentStage={e.stage} />
+                </td>
               </tr>
             ))}
           </tbody>
