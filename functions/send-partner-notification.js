@@ -15,24 +15,25 @@ exports.handler = async function(event) {
   }
 
   const {
-    to,            // partner’s email address
-    name,          // partner’s display name
-    entrepreneur,  // entrepreneur name
-    business,      // business name
-    date,          // contact date
-    initials,      // your initials
-    notes,         // any notes
-    stage,         // current stage
+    to,         // partner’s email address
+    partner,    // partner’s display name
+    entrepreneur,
+    business,
+    date,
+    initials,
+    notes,
+    stage,
   } = payload;
 
-  if (!to || !name) {
+  // if we never got a to/partner, bail
+  if (!to || !partner) {
     return {
       statusCode: 400,
-      body: JSON.stringify({ error: `Unknown partner or missing recipient: ${name}` }),
+      body: JSON.stringify({ error: `Unknown partner or missing recipient: ${partner}` }),
     };
   }
 
-  // Use FROM_EMAIL (set in Netlify) or fall back to your SMTP_USER
+  // pick a valid "from" address
   const fromAddress = process.env.FROM_EMAIL || process.env.SMTP_USER;
   if (!fromAddress) {
     console.error('❌ No FROM_EMAIL or SMTP_USER set');
@@ -42,10 +43,10 @@ exports.handler = async function(event) {
     };
   }
 
-  // Build the email
+  // build the notification email
   const subject = `New entrepreneur assigned: ${entrepreneur}`;
   const text = `
-Hello ${name},
+Hello ${partner},
 
 A new entrepreneur has been added to Founder Tracker:
 
@@ -62,7 +63,7 @@ Thanks,
 Founder Tracker
   `.trim();
 
-  // Configure Nodemailer SMTP transport
+  // configure your SMTP client
   const transporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST,
     port: Number(process.env.SMTP_PORT || 587),
@@ -73,7 +74,7 @@ Founder Tracker
     },
   });
 
-  // Send it!
+  // send it!
   try {
     await transporter.sendMail({
       from:    fromAddress,
