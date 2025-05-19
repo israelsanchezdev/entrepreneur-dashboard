@@ -16,19 +16,18 @@ const RESOURCE_PARTNERS = [
 
 export default function AddEntrepreneur() {
   const navigate = useNavigate();
-  const { user } = useAuth(); // get the logged-in user
+  const { user } = useAuth();
 
   const [formData, setFormData] = useState({
-    name: '',
-    business: '',
-    type: '',
-    date: '',
-    referred: '',
-    partnerEmail: '',
-    initials: '',
-    confirmed: false,
-    notes: '',
-    stage: 'Ideation',
+    name:       '',
+    business:   '',
+    type:       '',
+    date:       '',
+    referred:   '',
+    initials:   '',
+    confirmed:  false,
+    notes:      '',
+    stage:      'Ideation',
   });
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -49,11 +48,11 @@ export default function AddEntrepreneur() {
       return;
     }
 
-    // Find the partner email
-    const partnerObj = RESOURCE_PARTNERS.find((p) => p.name === formData.referred);
+    // Find the partner email from your map
+    const partnerObj   = RESOURCE_PARTNERS.find((p) => p.name === formData.referred);
     const partnerEmail = partnerObj?.email || '';
 
-    // Insert into Supabase
+    // 1) Insert into Supabase
     const { error: insertError } = await supabase
       .from('entrepreneurs')
       .insert([{
@@ -75,14 +74,14 @@ export default function AddEntrepreneur() {
       return;
     }
 
-    // Notify partner
+    // 2) Notify partner via Netlify function
     try {
       const res = await fetch('/.netlify/functions/send-partner-notification', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           to:           partnerEmail,
-          name:         formData.referred,
+          partner:      formData.referred,     // <-- now matches the function’s expectation
           entrepreneur: formData.name,
           business:     formData.business,
           date:         formData.date,
@@ -98,7 +97,7 @@ export default function AddEntrepreneur() {
       console.error('Partner notification error:', err);
     }
 
-    // Done
+    // 3) Finally, go back to list
     navigate('/entrepreneurs');
   };
 
@@ -108,124 +107,38 @@ export default function AddEntrepreneur() {
       {errorMsg && <p className="text-red-600">{errorMsg}</p>}
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Name */}
-        <input
-          name="name"
-          placeholder="Entrepreneur Name"
-          value={formData.name}
-          onChange={handleChange}
-          required
-          className="w-full p-2 border rounded text-black"
-        />
-
-        {/* Business */}
-        <input
-          name="business"
-          placeholder="Business Name"
-          value={formData.business}
-          onChange={handleChange}
-          required
-          className="w-full p-2 border rounded text-black"
-        />
-
-        {/* Type */}
-        <select
-          name="type"
-          value={formData.type}
-          onChange={handleChange}
-          required
-          className="w-full p-2 border rounded text-black"
-        >
+        <input name="name"       placeholder="Entrepreneur Name"     value={formData.name}       onChange={handleChange} required className="w-full p-2 border rounded text-black" />
+        <input name="business"   placeholder="Business Name"          value={formData.business}   onChange={handleChange} required className="w-full p-2 border rounded text-black" />
+        <select name="type"      value={formData.type}           onChange={handleChange} required className="w-full p-2 border rounded text-black">
           <option value="">Select Business Type</option>
           <option value="Ideation">Ideation</option>
           <option value="Planning">Planning</option>
           <option value="Launch">Launch</option>
           <option value="Funding">Funding</option>
         </select>
-
-        {/* Date */}
-        <input
-          type="date"
-          name="date"
-          value={formData.date}
-          onChange={handleChange}
-          className="w-full p-2 border rounded text-black"
-        />
-
-        {/* Referred To */}
-        <select
-          name="referred"
-          value={formData.referred}
-          onChange={(e) => {
-            const name = e.target.value;
-            const partner = RESOURCE_PARTNERS.find((p) => p.name === name);
-            setFormData((prev) => ({
-              ...prev,
-              referred:     name,
-              partnerEmail: partner?.email || '',
-            }));
-          }}
-          required
-          className="w-full p-2 border rounded text-black"
-        >
+        <input type="date" name="date"     value={formData.date}        onChange={handleChange} className="w-full p-2 border rounded text-black" />
+        <select name="referred" value={formData.referred}      onChange={handleChange} required className="w-full p-2 border rounded text-black">
           <option value="">Referred To</option>
           {RESOURCE_PARTNERS.map((p) => (
             <option key={p.name} value={p.name}>{p.name}</option>
           ))}
         </select>
-
-        {/* Initials */}
-        <input
-          name="initials"
-          placeholder="Your Initials"
-          value={formData.initials}
-          onChange={handleChange}
-          className="w-full p-2 border rounded text-black"
-        />
-
-        {/* Partner Confirmed */}
+        <input name="initials"   placeholder="Your Initials"          value={formData.initials}   onChange={handleChange} className="w-full p-2 border rounded text-black" />
         <label className="inline-flex items-center space-x-2 text-black dark:text-white">
-          <input
-            type="checkbox"
-            name="confirmed"
-            checked={formData.confirmed}
-            onChange={handleChange}
-            className="form-checkbox"
-          />
+          <input type="checkbox" name="confirmed" checked={formData.confirmed} onChange={handleChange} className="form-checkbox" />
           <span>Partner Confirmed</span>
         </label>
-
-        {/* Notes */}
-        <textarea
-          name="notes"
-          placeholder="Notes"
-          value={formData.notes}
-          onChange={handleChange}
-          className="w-full p-2 border rounded text-black"
-          rows={4}
-        />
-
-        {/* Stage */}
+        <textarea name="notes"   placeholder="Notes"                   value={formData.notes}      onChange={handleChange} className="w-full p-2 border rounded text-black" rows={4} />
         <div>
           <label className="block mb-1 font-semibold text-black dark:text-white">Stage</label>
-          <select
-            name="stage"
-            value={formData.stage}
-            onChange={handleChange}
-            required
-            className="w-full p-2 border rounded text-black"
-          >
+          <select name="stage"    value={formData.stage}          onChange={handleChange} required className="w-full p-2 border rounded text-black">
             <option value="Ideation">Ideation</option>
             <option value="Planning">Planning</option>
             <option value="Launch">Launch</option>
             <option value="Funding">Funding</option>
           </select>
         </div>
-
-        <button
-          type="submit"
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded"
-        >
+        <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded">
           Add Entrepreneur
         </button>
       </form>
