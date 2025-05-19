@@ -6,7 +6,7 @@ import { useAuth } from '../auth';
 
 // Partner name → actual email address map
 const RESOURCE_PARTNERS = [
-  { name: 'Go Topeka',                 email: 'israelsanchezofficial@gmail.com'          },
+  { name: 'Go Topeka',                 email: 'israel.sanchez@topekapartnership.com'  },
   { name: 'KS Department of Commerce', email: 'contact@kscommerce.gov'    },
   { name: 'Network Kansas',            email: 'hello@networkkansas.org'    },
   { name: 'Omni Circle',               email: 'team@omnicircle.org'         },
