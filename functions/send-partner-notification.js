@@ -1,19 +1,15 @@
 // functions/send-partner-notification.js
-
 const nodemailer = require('nodemailer');
 
-exports.handler = async function (event) {
+exports.handler = async function(event) {
   if (event.httpMethod !== 'POST') {
-    return {
-      statusCode: 405,
-      body: JSON.stringify({ error: 'Method Not Allowed' }),
-    };
+    return { statusCode: 405, body: 'Method Not Allowed' };
   }
 
   try {
     const {
       to,
-      name,
+      partner,
       entrepreneur,
       business,
       date,
@@ -22,26 +18,34 @@ exports.handler = async function (event) {
       stage,
     } = JSON.parse(event.body);
 
-    console.log('Partner notification payload:', { to, name, entrepreneur, business, date, initials, notes, stage });
-
-    if (!to) {
-      console.error('Missing "to" address');
+    if (!to || !partner) {
       return {
         statusCode: 400,
-        body: JSON.stringify({ error: 'Missing partner email (to)' }),
+        body: JSON.stringify({ error: `Unknown partner: ${partner}` }),
       };
     }
 
-    // Use the FROM_EMAIL env-var, or fallback if not set locally
-    const fromEmail = process.env.FROM_EMAIL
-      ? process.env.FROM_EMAIL
-      : '"Founder Tracker" <no-reply@yourdomain.com>';
+    // build a simple notification email
+    const subject = `New entrepreneur assigned: ${entrepreneur}`;
+    const text    = `
+      Hi ${partner},
 
-    console.log('Using FROM_EMAIL:', fromEmail);
+      A new entrepreneur has been added:
 
+      • Name:        ${entrepreneur}
+      • Business:    ${business}
+      • Contacted:   ${date || '—'}
+      • Stage:       ${stage}
+      • Initials:    ${initials || '—'}
+      • Notes:       ${notes || '—'}
+
+      Please follow up as appropriate.
+    `;
+
+    // SMTP configuration (from your Netlify ENV)
     const transporter = nodemailer.createTransport({
-      host:   process.env.SMTP_HOST,
-      port:   Number(process.env.SMTP_PORT),
+      host: process.env.SMTP_HOST,
+      port: Number(process.env.SMTP_PORT),
       secure: false,
       auth: {
         user: process.env.SMTP_USER,
@@ -49,40 +53,20 @@ exports.handler = async function (event) {
       },
     });
 
-    const mailOptions = {
-      from:    fromEmail,      // ← now guaranteed
-      to,                    // actual partner email
-      subject: `New referral for ${name}`,
-      text: `
-Hello ${name},
-
-A new entrepreneur has been referred to you:
-
-• Name:        ${entrepreneur}
-• Business:    ${business}
-• Date:        ${date}
-• Initials:    ${initials}
-• Stage:       ${stage}
-• Notes:       ${notes || '–'}
-
-Please follow up at your earliest convenience.
-
-Thank you,
-Founder Tracker
-      `,
-    };
-
-    console.log('Sending mail with options:', mailOptions);
-
-    const info = await transporter.sendMail(mailOptions);
-    console.log('SMTP sendMail response:', info);
+    await transporter.sendMail({
+      from:    process.env.FROM_EMAIL,
+      to:      to,
+      subject: subject,
+      text:    text,
+    });
 
     return {
       statusCode: 200,
-      body: JSON.stringify({ message: 'Partner notified', info }),
+      body: JSON.stringify({ message: 'Partner notified' }),
     };
+
   } catch (err) {
-    console.error('Error sending partner notification:', err);
+    console.error('Partner-notification error:', err);
     return {
       statusCode: 500,
       body: JSON.stringify({ error: 'Failed to notify partner', details: err.message }),
